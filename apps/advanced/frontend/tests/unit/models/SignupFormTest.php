@@ -4,43 +4,50 @@ namespace frontend\tests\unit\models;
 
 use frontend\tests\unit\DbTestCase;
 use common\tests\fixtures\UserFixture;
+use Codeception\Specify;
+use frontend\models\SignupForm;
 
 class SignupFormTest extends DbTestCase
 {
 
-	use \Codeception\Specify;
+    use Specify;
 
-	public function testCorrectSignup()
-	{
-		$model = $this->getMock('frontend\models\SignupForm', ['validate']);
-		$model->expects($this->once())->method('validate')->will($this->returnValue(true));
+    public function testCorrectSignup()
+    {
+        $model = new SignupForm([
+            'username' => 'some_username',
+            'email' => 'some_email@example.com',
+            'password' => 'some_password',
+        ]);
 
-		$model->username = 'some_username';
-		$model->email = 'some_email@example.com';
-		$model->password = 'some_password';
+        $user = $model->signup();
 
-		$user = $model->signup();
-		$this->assertInstanceOf('common\models\User', $user);
-		expect('username should be correct', $user->username)->equals('some_username');
-		expect('email should be correct', $user->email)->equals('some_email@example.com');
-		expect('password should be correct', $user->validatePassword('some_password'))->true();
-	}
+        $this->assertInstanceOf('common\models\User', $user, 'user should be valid');
 
-	public function testNotCorrectSignup()
-	{
-		$model = $this->getMock('frontend\models\SignupForm', ['validate']);
-		$model->expects($this->once())->method('validate')->will($this->returnValue(false));
+        expect('username should be correct', $user->username)->equals('some_username');
+        expect('email should be correct', $user->email)->equals('some_email@example.com');
+        expect('password should be correct', $user->validatePassword('some_password'))->true();
+    }
 
-		expect('user should not be created', $model->signup())->null();
-	}
+    public function testNotCorrectSignup()
+    {
+        $model = new SignupForm([
+            'username' => 'troy.becker',
+            'email' => 'nicolas.dianna@hotmail.com',
+            'password' => 'some_password',
+        ]);
 
-	public function fixtures()
-	{
-		return [
-			'user' => [
-				'class' => UserFixture::className(),
-				'dataFile' => false, //do not load test data, only table cleanup
-			],
-		];
-	}
+        expect('username and email are in use, user should not be created', $model->signup())->null();
+    }
+
+    public function fixtures()
+    {
+        return [
+            'user' => [
+                'class' => UserFixture::className(),
+                'dataFile' => '@frontend/tests/unit/fixtures/data/models/user.php',
+            ],
+        ];
+    }
+
 }

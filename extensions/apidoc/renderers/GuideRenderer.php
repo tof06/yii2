@@ -8,16 +8,7 @@
 namespace yii\apidoc\renderers;
 
 use Yii;
-use yii\apidoc\models\ClassDoc;
-use yii\apidoc\models\ConstDoc;
-use yii\apidoc\models\Context;
-use yii\apidoc\models\EventDoc;
-use yii\apidoc\models\InterfaceDoc;
-use yii\apidoc\models\MethodDoc;
-use yii\apidoc\models\PropertyDoc;
-use yii\apidoc\models\TraitDoc;
-use yii\base\Component;
-use yii\console\Controller;
+use yii\apidoc\helpers\IndexFileAnalyzer;
 
 /**
  * Base class for all Guide documentation renderers
@@ -27,12 +18,32 @@ use yii\console\Controller;
  */
 abstract class GuideRenderer extends BaseRenderer
 {
-	/**
-	 * Render markdown files
-	 *
-	 * @param array $files list of markdown files to render
-	 * @param $targetDir
-	 */
-	public abstract function render($files, $targetDir);
+    /**
+     * Render markdown files
+     *
+     * @param array $files list of markdown files to render
+     * @param $targetDir
+     */
+    abstract public function render($files, $targetDir);
 
+
+    protected function loadGuideStructure($files)
+    {
+        $chapters = [];
+        foreach ($files as $file) {
+            $contents = file_get_contents($file);
+            if (basename($file) == 'README.md') {
+                $indexAnalyzer = new IndexFileAnalyzer();
+                $chapters = $indexAnalyzer->analyze($contents);
+                break;
+            }
+            if (preg_match("/^(.*)\n=+/", $contents, $matches)) {
+                $headlines[$file] = $matches[1];
+            } else {
+                $headlines[$file] = basename($file);
+            }
+
+        }
+        return $chapters;
+    }
 }

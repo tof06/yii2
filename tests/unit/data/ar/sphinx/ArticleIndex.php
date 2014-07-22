@@ -3,31 +3,44 @@ namespace yiiunit\data\ar\sphinx;
 
 class ArticleIndex extends ActiveRecord
 {
-	public $custom_column;
+    public $custom_column;
 
-	public static function indexName()
-	{
-		return 'yii2_test_article_index';
-	}
+    /**
+     * @inheritdoc
+     */
+    public static function indexName()
+    {
+        return 'yii2_test_article_index';
+    }
 
-	public function getSource()
-	{
-		return $this->hasOne(ArticleDb::className(), ['id' => 'id']);
-	}
+    public function getSource()
+    {
+        return $this->hasOne(ArticleDb::className(), ['id' => 'id']);
+    }
 
-	public function getTags()
-	{
-		return $this->hasMany(TagDb::className(), ['id' => 'tag']);
-	}
+    public function getSourceCompositeLink()
+    {
+        return $this->hasOne(ArticleDb::className(), ['id' => 'id', 'author_id' => 'author_id']);
+    }
 
-	public function getSnippetSource()
-	{
-		return $this->source->content;
-	}
+    public function getTags()
+    {
+        return $this->hasMany(TagDb::className(), ['id' => 'tag']);
+    }
 
-	public static function createQuery($config = [])
-	{
-		$config['modelClass'] = get_called_class();
-		return new ArticleIndexQuery($config);
-	}
+    /**
+     * @inheritdoc
+     */
+    public function getSnippetSource()
+    {
+        return $this->source->content;
+    }
+
+    /**
+     * @return ArticleIndexQuery
+     */
+    public static function find()
+    {
+        return new ArticleIndexQuery(get_called_class());
+    }
 }

@@ -9,28 +9,36 @@ use frontend\models\ResetPasswordForm;
 class ResetPasswordFormTest extends DbTestCase
 {
 
-	use \Codeception\Specify;
+    /**
+     * @expectedException yii\base\InvalidParamException
+     */
+    public function testResetWrongToken()
+    {
+        new ResetPasswordForm('notexistingtoken_1391882543');
+    }
 
-	public function testResetPassword()
-	{
-		$this->specify('wrong reset token', function () {
-			$this->setExpectedException('\Exception', 'Wrong password reset token.');
-			new ResetPasswordForm('notexistingtoken_1391882543');
-		});
+    /**
+     * @expectedException yii\base\InvalidParamException
+     */
+    public function testResetEmptyToken()
+    {
+        new ResetPasswordForm('');
+    }
 
-		$this->specify('not correct token', function () {
-			$this->setExpectedException('yii\base\InvalidParamException', 'Password reset token cannot be blank.');
-			new ResetPasswordForm('');
-		});
-	}
+    public function testResetCorrectToken()
+    {
+        $form = new ResetPasswordForm($this->user[0]['password_reset_token']);
+        expect('password should be resetted', $form->resetPassword())->true();
+    }
 
-	public function fixtures()
-	{
-		return [
-			'user' => [
-				'class' => UserFixture::className(),
-				'dataFile' => '@frontend/tests/unit/fixtures/data/tbl_user.php'
-			],
-		];
-	}
+    public function fixtures()
+    {
+        return [
+            'user' => [
+                'class' => UserFixture::className(),
+                'dataFile' => '@frontend/tests/unit/fixtures/data/models/user.php'
+            ],
+        ];
+    }
+
 }

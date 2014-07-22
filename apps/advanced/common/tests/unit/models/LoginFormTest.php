@@ -3,66 +3,86 @@
 namespace common\tests\unit\models;
 
 use Yii;
-use frontend\tests\unit\TestCase;
-use common\models\User;
-use yii\helpers\Security;
+use common\tests\unit\DbTestCase;
+use Codeception\Specify;
+use common\models\LoginForm;
+use common\tests\fixtures\UserFixture;
 
-class LoginFormTest extends TestCase
+class LoginFormTest extends DbTestCase
 {
-	
-	use \Codeception\Specify;
 
-	protected function tearDown()
-	{
-		Yii::$app->user->logout();
-		parent::tearDown();
-	}
+    use Specify;
 
-	public function testLoginNoUser()
-	{
-		$model = $this->mockUser(null);
+    public function setUp()
+    {
+        parent::setUp();
 
-		$model->username = 'some_username';
-		$model->password = 'some_password';
+        Yii::configure(Yii::$app, [
+            'components' => [
+                'user' => [
+                    'class' => 'yii\web\User',
+                    'identityClass' => 'common\models\User',
+                ],
+            ],
+        ]);
+    }
 
-		$this->specify('user should not be able to login, when there is no identity', function () use ($model) {
-			expect('model should not login user', $model->login())->false();
-			expect('user should not be logged in', Yii::$app->user->isGuest)->true();
-		});
-	}
+    protected function tearDown()
+    {
+        Yii::$app->user->logout();
+        parent::tearDown();
+    }
 
-	public function testLoginWrongPassword()
-	{
-		$model = $this->mockUser(new User(['password_hash' => Security::generatePasswordHash('will-not-match')]));
+    public function testLoginNoUser()
+    {
+        $model = new LoginForm([
+            'username' => 'not_existing_username',
+            'password' => 'not_existing_password',
+        ]);
 
-		$model->username = 'demo';
-		$model->password = 'wrong-password';
+        $this->specify('user should not be able to login, when there is no identity', function () use ($model) {
+            expect('model should not login user', $model->login())->false();
+            expect('user should not be logged in', Yii::$app->user->isGuest)->true();
+        });
+    }
 
-		$this->specify('user should not be able to login with wrong password', function () use ($model) {
-			expect('model should not login user', $model->login())->false();
-			expect('error message should be set', $model->errors)->hasKey('password');
-			expect('user should not be logged in', Yii::$app->user->isGuest)->true();
-		});
-	}
+    public function testLoginWrongPassword()
+    {
+        $model = new LoginForm([
+            'username' => 'bayer.hudson',
+            'password' => 'wrong_password',
+        ]);
 
-	public function testLoginCorrect()
-	{
-		$model = $this->mockUser(new User(['password_hash' => Security::generatePasswordHash('demo')]));
+        $this->specify('user should not be able to login with wrong password', function () use ($model) {
+            expect('model should not login user', $model->login())->false();
+            expect('error message should be set', $model->errors)->hasKey('password');
+            expect('user should not be logged in', Yii::$app->user->isGuest)->true();
+        });
+    }
 
-		$model->username = 'demo';
-		$model->password = 'demo';
+    public function testLoginCorrect()
+    {
 
-		$this->specify('user should be able to login with correct credentials', function () use ($model) {
-			expect('model should login user', $model->login())->true();
-			expect('error message should not be set', $model->errors)->hasntKey('password');
-			expect('user should be logged in', Yii::$app->user->isGuest)->false();
-		});
-	}
+        $model = new LoginForm([
+            'username' => 'bayer.hudson',
+            'password' => 'password_0',
+        ]);
 
-	private function mockUser($user)
-	{
-		$loginForm = $this->getMock('common\models\LoginForm', ['getUser']);
-		$loginForm->expects($this->any())->method('getUser')->will($this->returnValue($user));
-		return $loginForm;
-	}
+        $this->specify('user should be able to login with correct credentials', function () use ($model) {
+            expect('model should login user', $model->login())->true();
+            expect('error message should not be set', $model->errors)->hasntKey('password');
+            expect('user should be logged in', Yii::$app->user->isGuest)->false();
+        });
+    }
+
+    public function fixtures()
+    {
+        return [
+            'user' => [
+                'class' => UserFixture::className(),
+                'dataFile' => '@common/tests/unit/fixtures/data/models/user.php'
+            ],
+        ];
+    }
+
 }
